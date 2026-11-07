@@ -6,9 +6,11 @@
     "dev": "next dev",
     "build": "next build",
     "start": "next start",
-    "lint": "eslint"
+    "lint": "eslint",
+    "test": "node tests/test_parser.mjs && node tests/test_validation.mjs && node tests/test_storage.mjs && node tests/test_assistant.mjs && node tests/test_suggestions.mjs && node tests/test_gemini_integration.mjs && node tests/audit_gemini_security.mjs"
   },
   "dependencies": {
+    "@google/genai": "^3.0.0",
     "@solana-program/system": "^0.16.0",
     "@solana/kit": "^8.6.0",
     "@solana/kit-plugin-rpc": "^0.23.0",
