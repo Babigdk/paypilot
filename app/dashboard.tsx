@@ -60,6 +60,124 @@ function WalletBalance({ owner }: { owner: string }) {
   );
 }
 
+
+type PreparedPayment = {
+  amount: string;
+  recipient: string;
+};
+
+function PaymentComposer() {
+  const [instruction, setInstruction] = useState("");
+  const [payment, setPayment] = useState<PreparedPayment | null>(null);
+  const [error, setError] = useState("");
+
+  function preparePayment() {
+    setError("");
+    setPayment(null);
+
+    const pattern =
+      /send\s+([0-9]*\.?[0-9]+)\s+sol\s+to\s+([1-9A-HJ-NP-Za-km-z]{32,44})/i;
+
+    const match = instruction.trim().match(pattern);
+
+    if (!match) {
+      setError(
+        "Try: Send 0.1 SOL to followed by a valid Solana wallet address."
+      );
+      return;
+    }
+
+    const amount = match[1];
+    const recipient = match[2];
+    const numericAmount = Number(amount);
+
+    if (!Number.isFinite(numericAmount) || numericAmount <= 0) {
+      setError("Enter a valid amount greater than zero.");
+      return;
+    }
+
+    try {
+      address(recipient);
+    } catch {
+      setError("The recipient address is not a valid Solana address.");
+      return;
+    }
+
+    setPayment({ amount, recipient });
+  }
+
+  return (
+    <div className="mt-8 w-full rounded-2xl border border-purple-500/20 bg-purple-500/[0.04] p-6 md:p-8">
+      <div className="mb-5">
+        <h3 className="text-lg font-semibold">Make a payment</h3>
+        <p className="mt-1 text-sm text-zinc-400">
+          Describe the SOL payment you want to prepare.
+        </p>
+      </div>
+
+      <textarea
+        value={instruction}
+        onChange={(event) => {
+          setInstruction(event.target.value);
+          setPayment(null);
+          setError("");
+        }}
+        placeholder="Send 0.1 SOL to YOUR_RECIPIENT_ADDRESS"
+        rows={3}
+        className="w-full resize-none rounded-xl border border-white/10 bg-black/30 p-4 text-sm text-white outline-none placeholder:text-zinc-600 focus:border-purple-500"
+      />
+
+      <button
+        onClick={preparePayment}
+        disabled={!instruction.trim()}
+        className="mt-4 w-full rounded-xl bg-purple-600 px-5 py-3 font-semibold transition hover:bg-purple-500 disabled:cursor-not-allowed disabled:opacity-50"
+      >
+        Prepare payment →
+      </button>
+
+      {error && (
+        <p className="mt-4 text-sm text-red-400" role="alert">
+          {error}
+        </p>
+      )}
+
+      {payment && (
+        <div className="mt-6 rounded-xl border border-green-500/20 bg-green-500/5 p-5">
+          <div className="flex items-center justify-between">
+            <h4 className="font-semibold">Payment preview</h4>
+            <span className="text-xs text-green-400">Prepared</span>
+          </div>
+
+          <div className="mt-5 space-y-4">
+            <div>
+              <p className="text-xs text-zinc-500">Amount</p>
+              <p className="mt-1 text-2xl font-bold">
+                {payment.amount} SOL
+              </p>
+            </div>
+
+            <div>
+              <p className="text-xs text-zinc-500">Recipient</p>
+              <p className="mt-1 break-all font-mono text-sm">
+                {payment.recipient}
+              </p>
+            </div>
+
+            <div>
+              <p className="text-xs text-zinc-500">Network</p>
+              <p className="mt-1 text-sm">Solana Devnet</p>
+            </div>
+          </div>
+
+          <p className="mt-5 rounded-lg bg-black/30 p-3 text-xs text-yellow-400">
+            Preview only. No transaction has been signed or submitted.
+          </p>
+        </div>
+      )}
+    </div>
+  );
+}
+
 export default function Home() {
   const client = useClient<AppClient>();
   const wallets = useWallets(client);
@@ -186,7 +304,7 @@ export default function Home() {
             </div>
           )}
         </div>
-
+        {connected && <PaymentComposer />}
         <p className="mt-8 text-center text-xs text-zinc-600">
           Your private keys stay in your wallet. PayPilot never asks for your
           recovery phrase.
